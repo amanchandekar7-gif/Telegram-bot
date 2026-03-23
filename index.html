@@ -1,58 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tap & Earn</title>
+<title>Tap Test</title>
 
 <style>
 body {
-  background: #121212;
+  background: black;
   color: white;
   text-align: center;
-  font-family: Arial;
 }
 
-h1 {
-  color: gold;
-}
-
-.coin {
+#coin {
   width: 150px;
   height: 150px;
-  background: url('https://cryptologos.cc/logos/tether-usdt-logo.png') no-repeat center/cover;
+  background: yellow;
   margin: 50px auto;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.score {
-  font-size: 40px;
-  margin-top: 20px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>💰 Tap & Earn</h1>
+<h1 id="score">0</h1>
 
-<div class="score" id="score">0</div>
-
-<div class="coin" id="coin"></div>
-
-<p>Tap the coin</p>
+<div id="coin"></div>
 
 <script>
 let score = 0;
 
-const coin = document.getElementById("coin");
-const scoreText = document.getElementById("score");
-
-coin.addEventListener("click", function () {
+document.getElementById("coin").onclick = function() {
   score++;
-  scoreText.innerText = score;
-});
+  document.getElementById("score").innerText = score;
+};
 </script>
 
 </body>
