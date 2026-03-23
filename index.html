@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TAP & EARN 💰</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <style>
+        /* === CSS & UI STYLING === */
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --primary-color: #f3ba2f; /* USDT Yellow */
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            user-select: none; /* Prevent text selection while tapping */
+            overflow-x: hidden;
+        }
+
+        /* Top Header */
+        header {
+            background-color: var(--surface-color);
+            padding: 15px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            border-bottom: 2px solid #333;
+        }
+
+        /* Main Container */
+        .container {
+            padding: 20px;
+            padding-bottom: 80px; /* Space for bottom nav */
+        }
+
+        /* Screen/Tab Management */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* --- TAP & EARN SECTION --- */
+        .tap-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .stats-box {
+            background: var(--surface-color);
+            padding: 15px 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 40px;
+            width: 80%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .stats-box h2 { margin: 0; font-size: 32px; color: var(--primary-color); }
+        .stats-box p { margin: 5px 0 0 0; color: var(--text-muted); }
+
+        /* USDT Bounce Animation */
+        .usdt-coin {
+            width: 180px;
+            height: 180px;
+            background: url('https://cryptologos.cc/logos/tether-usdt-logo.png') center/cover no-repeat;
+            border-radius: 50%;
+            cursor: pointer;
+            animation: bounce 2s infinite ease-in-out;
+            box-shadow: 0 0 30px rgba(243, 186, 47, 0.4);
+            transition: transform 0.1s;
+        }
+
+        .usdt-coin:active {
+            transform: scale(0.95) !important;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Floating +1 Animation */
+        .float-anim {
+            position: absolute;
+            color: var(--primary-color);
+            font-size: 24px;
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-80px) scale(1.5); }
+        }
+
+        /* --- TASKS SECTION --- */
+        .task-card {
+            background: var(--surface-color);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .task-card button {
+            background: var(--primary-color);
+            color: black;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .task-card button:disabled { background: #555; cursor: not-allowed; }
+        
+        .referral-box {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .referral-box input {
+            width: 90%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            border: none;
+            background: #111;
+            color: white;
+            text-align: center;
+        }
+
+        /* --- PROFILE SECTION --- */
+        .profile-card {
+            text-align: center;
+            background: var(--surface-color);
+            padding: 30px;
+            border-radius: 15px;
+        }
+        .profile-pic {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #444;
+            margin: 0 auto 15px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            overflow: hidden;
+        }
+        .profile-pic img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* --- WITHDRAWAL SECTION --- */
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; margin-bottom: 5px; color: var(--text-muted); }
+        .input-group input {
+            width: 100%; box-sizing: border-box; padding: 12px;
+            border-radius: 5px; border: 1px solid #444; background: #111; color: white;
+        }
+        .btn-submit {
+            width: 100%; padding: 12px; background: var(--primary-color);
+            color: black; font-weight: bold; border: none; border-radius: 5px; cursor: pointer;
+        }
+        .history-list { margin-top: 20px; }
+        .history-item { background: #222; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-size: 14px;}
+        .status-pending { color: orange; }
+        .status-approved { color: #00ff00; }
+        .status-rejected { color: red; }
+
+        /* --- ADMIN PANEL --- */
+        .admin-panel { padding: 10px; }
+        .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;}
+        .admin-stat { background: #333; padding: 15px; text-align: center; border-radius: 10px;}
+
+        /* --- BOTTOM NAVIGATION --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%;
+            background: var(--surface-color);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-top: 1px solid #333;
+            z-index: 100;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .nav-item.active { color: var(--primary-color); }
+        .nav-icon { font-size: 24px; margin-bottom: 3px; }
+
+    </style>
+</head>
+<body>
+
+    <header id="app-header">🪙 TAP & EARN</header>
+
+    <div class="container">
+        
+        <div id="screen-tap" class="screen active">
+            <div class="tap-section">
+                <div class="stats-box">
+                    <h2 id="display-coins">0</h2>
+                    <p>Level: <span id="display-level">1</span></p>
+                </div>
+                <div class="usdt-coin" id="tap-button"></div>
+                <p style="margin-top: 30px; color: var(--text-muted);">Tap the coin to earn!</p>
+            </div>
+        </div>
+
+        <div id="screen-tasks" class="screen">
+            <h3>📝 Available Tasks</h3>
+            <div id="tasks-container">
+                <p>Loading tasks...</p>
+            </div>
+
+            <div class="referral-box">
+                <h3>🤝 Refer & Earn</h3>
+                <p>Invite friends and get <b>500 coins</b> per referral!</p>
+                <input type="text" id="referral-link" readonly value="Loading...">
+                <button class="btn-submit" style="margin-top: 10px;" onclick="copyReferral()">Copy Link</button>
+            </div>
+        </div>
+
+        <div id="screen-withdraw" class="screen">
+            <h3>💸 Withdraw USDT</h3>
+            <p style="color: var(--primary-color); font-size: 14px;">Exchange Rate: 10,000 Coins = 1 USDT</p>
+            <div style="background: var(--surface-color); padding: 15px; border-radius: 10px;">
+                <p>Your Balance: <b id="withdraw-balance">0</b> Coins ≈ <b id="withdraw-usdt">0.00</b> USDT</p>
+                <div class="input-group">
+                    <label>USDT Wallet Address (BEP20 / TRC20)</label>
+                    <input type="text" id="wallet-address" placeholder="Enter your address...">
+                </div>
+                <button class="btn-submit" onclick="requestWithdrawal()">Submit Request</button>
+            </div>
+
+            <div class="history-list">
+                <h4>🕒 Withdrawal History</h4>
+                <div id="withdrawal-history"></div>
+            </div>
+        </div>
+
+        <div id="screen-profile" class="screen">
+            <div class="profile-card">
+                <div class="profile-pic" id="profile-pic">👤</div>
+                <h2 id="profile-name">Guest User</h2>
+                <p style="color: var(--text-muted)">ID: <span id="profile-id">N/A</span></p>
+                <hr style="border-color: #333; margin: 20px 0;">
+                <h3>Total Coins: <span id="profile-coins" style="color: var(--primary-color)">0</span></h3>
+                <p>Current Level: <b id="profile-level">1</b></p>
+            </div>
+        </div>
+
+        <div id="screen-admin" class="screen">
+            <h2 style="color: red;">🛠️ Admin Dashboard</h2>
+            <div class="admin-grid">
+                <div class="admin-stat">
+                    <h3>Total Users</h3>
+                    <p id="admin-total-users">0</p>
+                </div>
+                <div class="admin-stat">
+                    <h3>Total Coins</h3>
+                    <p id="admin-total-coins">0</p>
+                </div>
+            </div>
+
+            <h3>Withdrawal Requests</h3>
+            <div id="admin-withdrawals" style="background: #222; padding: 10px; border-radius: 10px;">
+                Loading...
+            </div>
+        </div>
+
+    </div>
+
+    <div class="bottom-nav" id="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('tap')">
+            <span class="nav-icon">👆</span>
+            <span>Tap</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('tasks')">
+            <span class="nav-icon">📋</span>
+            <span>Tasks</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('withdraw')">
+            <span class="nav-icon">💸</span>
+            <span>Withdraw</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('profile')">
+            <span class="nav-icon">👤</span>
+            <span>Profile</span>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase SDK (V10 Modular via CDN)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, addDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // ==========================================
+        // ⚠️ INSERT YOUR FIREBASE CONFIG HERE ⚠️
+        // ==========================================
+        const firebaseConfig = {
+  apiKey: "AIzaSyAwwL02m3kqFCcPVKQb7c32KXLXQSKesvk",
+  authDomain: "earn-bot-3c7ff.firebaseapp.com",
+  projectId: "earn-bot-3c7ff",
+  storageBucket: "earn-bot-3c7ff.firebasestorage.app",
+  messagingSenderId: "681736026474",
+  appId: "1:681736026474:web:01885bb57de0e741cb8d13"
+};
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Telegram WebApp Init
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Make WebApp full screen
+
+        // Global State Variables
+        let userData = {
+            id: 'guest_' + Math.floor(Math.random() * 10000),
+            name: 'Guest User',
+            username: '',
+            photoUrl: '',
+            coins: 0,
+            level: 1,
+            completedTasks: []
+        };
+        let isAdmin = false;
+        let saveTimeout = null;
+
+        // Constants
+        const LEVEL_UP_REQUIREMENT = 1000;
+        const CONVERSION_RATE = 10000; // 10,000 coins = 1 USDT
+        const REFERRAL_REWARD = 500;
+
+        // ==========================================
+        // 1. INITIALIZATION & DATA LOADING
+        // ==========================================
+        async function init() {
+            // Check Admin Mode via URL Parameter (e.g., ?admin=true)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('admin') === 'true' && !tg.initDataUnsafe?.user) {
+                isAdmin = true;
+                document.getElementById('bottom-nav').style.display = 'none';
+                document.getElementById('app-header').innerText = "Admin Panel";
+                switchTab('admin');
+                loadAdminData();
+                return; // Stop user init
+            }
+
+            // Fetch Telegram User Data
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                const tUser = tg.initDataUnsafe.user;
+                userData.id = tUser.id.toString();
+                userData.name = tUser.first_name + (tUser.last_name ? ' ' + tUser.last_name : '');
+                userData.username = tUser.username || '';
+                userData.photoUrl = tUser.photo_url || '';
+            }
+
+            // Load Data Strategy: 1. LocalStorage -> 2. Firebase
+            const localData = localStorage.getItem(`tapEarn_${userData.id}`);
+            if (localData) {
+                const parsed = JSON.parse(localData);
+                userData.coins = parsed.coins || 0;
+                userData.level = parsed.level || 1;
+                userData.completedTasks = parsed.completedTasks || [];
+                updateUI();
+                // Background sync from Firebase to ensure no data loss
+                fetchFromFirebase();
+            } else {
+                await fetchFromFirebase();
+            }
+
+            loadTasks();
+            loadWithdrawalHistory();
+            generateReferralLink();
+        }
+
+        async function fetchFromFirebase() {
+            try {
+                const userRef = doc(db, "users", userData.id);
+                const docSnap = await getDoc(userRef);
+                
+                if (docSnap.exists()) {
+                    const dbData = docSnap.data();
+                    userData.coins = dbData.coins || 0;
+                    userData.level = Math.floor(userData.coins / LEVEL_UP_REQUIREMENT) + 1;
+                    userData.completedTasks = dbData.completedTasks || [];
+                } else {
+                    // First time user, save initial data
+                    await saveToFirebase();
+                }
+                saveToLocal();
+                updateUI();
+            } catch (error) {
+                console.error("Firebase fetch error:", error);
+            }
+        }
+
+        // ==========================================
+        // 2. SAVING DATA (Local & Firebase)
+        // ==========================================
+        function saveToLocal() {
+            localStorage.setItem(`tapEarn_${userData.id}`, JSON.stringify({
+                coins: userData.coins,
+                level: userData.level,
+                completedTasks: userData.completedTasks
+            }));
+        }
+
+        async function saveToFirebase() {
+            try {
+                const userRef = doc(db, "users", userData.id);
+                await setDoc(userRef, userData, { merge: true });
+            } catch (error) {
+                console.error("Firebase save error:", error);
+            }
+        }
+
+        // Debounce Firebase saves so we don't spam the database on every tap
+        function scheduleFirebaseSync() {
+            saveToLocal();
+            updateUI();
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveToFirebase();
+            }, 2000); // Sync to DB 2 seconds after last tap
+        }
+
+        // ==========================================
+        // 3. UI UPDATES & TAB SWITCHING
+        // ==========================================
+        function updateUI() {
+            // Update Tap Screen
+            document.getElementById('display-coins').innerText = userData.coins.toLocaleString();
+            document.getElementById('display-level').innerText = userData.level;
+
+            // Update Profile Screen
+            document.getElementById('profile-name').innerText = userData.name;
+            document.getElementById('profile-id').innerText = userData.id;
+            document.getElementById('profile-coins').innerText = userData.coins.toLocaleString();
+            document.getElementById('profile-level').innerText = userData.level;
+            
+            if (userData.photoUrl) {
+                document.getElementById('profile-pic').innerHTML = `<img src="${userData.photoUrl}" alt="Avatar">`;
+            }
+
+            // Update Withdraw Screen
+            document.getElementById('withdraw-balance').innerText = userData.coins.toLocaleString();
+            const usdtValue = (userData.coins / CONVERSION_RATE).toFixed(4);
+            document.getElementById('withdraw-usdt').innerText = usdtValue;
+        }
+
+        window.switchTab = function(tabId) {
+            // Hide all screens
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            // Remove active from nav items
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            // Show target screen
+            document.getElementById(`screen-${tabId}`).classList.add('active');
+            
+            // Highlight nav icon (skip if admin)
+            if(!isAdmin) {
+                const navItems = document.querySelectorAll('.nav-item');
+                if(tabId === 'tap') navItems[0].classList.add('active');
+                if(tabId === 'tasks') navItems[1].classList.add('active');
+                if(tabId === 'withdraw') navItems[2].classList.add('active');
+                if(tabId === 'profile') navItems[3].classList.add('active');
+            }
+        };
+
+        // ==========================================
+        // 4. TAP & EARN LOGIC
+        // ==========================================
+        document.getElementById('tap-button').addEventListener('click', (e) => {
+            // Increase Coin
+            userData.coins += 1;
+            
+            // Check Level Up
+            const newLevel = Math.floor(userData.coins / LEVEL_UP_REQUIREMENT) + 1;
+            if (newLevel > userData.level) {
+                userData.level = newLevel;
+                tg.showAlert(`🎉 Congratulations! You reached Level ${userData.level}!`);
+            }
+
+            // Animation Details
+            createFloatingText(e.clientX, e.clientY);
+            
+            // Sync Data
+            scheduleFirebaseSync();
+        });
+
+        function createFloatingText(x, y) {
+            const floatEl = document.createElement('div');
+            floatEl.className = 'float-anim';
+            floatEl.innerText = '+1';
+            
+            // If touch coordinates are missing (sometimes happens on rapid taps), center it
+            if(!x || !y) {
+                const rect = document.getElementById('tap-button').getBoundingClientRect();
+                x = rect.left + rect.width / 2;
+                y = rect.top + rect.height / 2;
+            }
+
+            floatEl.style.left = `${x - 10}px`;
+            floatEl.style.top = `${y - 20}px`;
+            
+            document.body.appendChild(floatEl);
+            setTimeout(() => { floatEl.remove(); }, 1000);
+        }
+
+        // ====================
